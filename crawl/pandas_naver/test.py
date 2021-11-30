@@ -4,7 +4,8 @@
 import pandas_datareader.naver as web_naver
 
 
-df  = web_naver.NaverDailyReader(symbols='005930', start='20201111', end='20211114', adjust_price=True)
+if __name__ == "__main__":
+    df = web_naver.NaverDailyReader(symbols='005930', start='20201111', end='20211114', adjust_price=True)
 
-df = df.read()
-print(df)
+    df = df.read()
+    print(df)
