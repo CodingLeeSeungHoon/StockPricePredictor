@@ -27,7 +27,7 @@ class Preprocessor:
         # raw_csv = pandas instance
         self.raw_csv = self.__get_csv(path)
         # company name list from csv
-        self.co_name_list = None
+        self.co_name_list = set(self.__get_company_names())
 
         """ initializing tools for preprocess (stopwords, vectorization, y_labeling) """
         self.stopwords = Stopwords
@@ -52,6 +52,40 @@ class Preprocessor:
         :return:
         """
         print(self.raw_csv)
+
+    def __get_company_names(self):
+        """
+        get company name from csv
+        :return: list
+        """
+        loaded_csv = pd.read_csv("../Data/data_1213_20211114.csv", engine='python')
+        sorted_data = loaded_csv[['단축코드', '상장주식수', '한글 종목약명']].sort_values('한글 종목약명')
+        return sorted_data['한글 종목약명'].tolist()
+
+    def _first_preprocessing(self):
+        """
+        this is function for first preprocessing without broken company name
+        :return:
+        """
+        # print(self.raw_csv['title'])
+        title_dict = {}
+        raw_csv_to_co_name = []
+        for idx, title in enumerate(self.raw_csv['title']):
+            title_dict[str(idx)] = word_tokenize(title)
+
+        # 수정하기~
+        for t in title_dict.values():
+            raw_csv_to_co_name.append(set(t) & self.co_name_list)
+
+        print(raw_csv_to_co_name)
+
+    def __get_company_name_from_raw_csv(self):
+        """
+        get company name from raw csv
+        :return:
+        """
+
+        pass
 
     def __init_stop_word_set(self):
         """
@@ -99,4 +133,4 @@ class Preprocessor:
 
 if __name__ == '__main__':
     preprocessor = Preprocessor()
-    preprocessor._test_open_csv()
+    preprocessor._first_preprocessing()
