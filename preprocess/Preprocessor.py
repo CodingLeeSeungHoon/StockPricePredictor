@@ -62,10 +62,11 @@ class Preprocessor:
         sorted_data = loaded_csv[['단축코드', '상장주식수', '한글 종목약명']].sort_values('한글 종목약명')
         return sorted_data['한글 종목약명'].tolist()
 
-    def _first_preprocessing(self):
+    def __get_token_and_company_name(self):
         """
-        this is function for first preprocessing without broken company name
-        :return:
+        공시 1차적으로 약한 토큰화 진행, 회사 이름 뽑아내기
+        회사 이름 없거나 2개 이상으로 뽑히면 False로 처리
+        :return: 공시 딕셔너리, 공시에서 언급된 회사이름 리스트
         """
         # print(self.raw_csv['title'])
         title_dict = {}
@@ -78,21 +79,7 @@ class Preprocessor:
             raw_csv_to_co_name.append(set(t) & self.co_name_list if len(set(t) & self.co_name_list) == 1 else False)
 
         print(raw_csv_to_co_name)
-
-    def __get_company_name_from_raw_csv(self):
-        """
-        get company name from raw csv
-        :return:
-        """
-
-        pass
-
-    def __init_stop_word_set(self):
-        """
-        init stop word set
-        :return:
-        """
-        pass
+        return title_dict, raw_csv_to_co_name
 
     def __get_processed_csv(self):
         """
@@ -101,23 +88,6 @@ class Preprocessor:
         """
         pass
 
-
-    def __get_stock_price_with_co_code(self, co_code):
-        """
-        get stock price value with company code by naver pandas api
-        :param co_code: String
-        :return: integer
-        """
-        pass
-
-    @staticmethod
-    def __convert_price_to_y(self, price):
-        """
-        convert stock price to y data
-        :param price: Integer
-        :return: Double
-        """
-        pass
 
     def _preprocess_step(self):
         """
@@ -128,6 +98,8 @@ class Preprocessor:
         4) return preprocessed csv
         :return:
         """
+        tokenized_dict, csv_co_list = self.__get_token_and_company_name()
+
         pass
 
 
