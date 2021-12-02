@@ -75,7 +75,7 @@ class Preprocessor:
 
         # 수정하기~
         for t in title_dict.values():
-            raw_csv_to_co_name.append(set(t) & self.co_name_list)
+            raw_csv_to_co_name.append(set(t) & self.co_name_list if len(set(t) & self.co_name_list) == 1 else False)
 
         print(raw_csv_to_co_name)
 
