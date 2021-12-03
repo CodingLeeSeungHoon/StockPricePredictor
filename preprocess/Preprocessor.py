@@ -102,7 +102,7 @@ class Preprocessor:
         :return:
         """
         tokenized_dict, date_dict, csv_co_list = self.__get_token_and_company_name()
-        self.y_labeler.Ylabeler._ylaber_step(self.y_labeler.Ylabeler, date_dict, csv_co_list )
+        y_data = self.y_labeler.Ylabeler._ylaber_step(self.y_labeler.Ylabeler, date_dict, csv_co_list )
         
         pass
 

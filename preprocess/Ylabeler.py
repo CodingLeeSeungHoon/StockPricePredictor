@@ -3,6 +3,7 @@ import pandas as pd
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from requests.models import encode_multipart_formdata
 
 class Ylabeler:
     """ this is class for y data labeling. Stock price to y data """
@@ -10,13 +11,38 @@ class Ylabeler:
         pass
 
     def _get_national_holiday(self):
-        national_holiday = pd.read_excel('../Data/national_holiday.xlsx')
-        national_holiday_lst = national_holiday.loc[:, ['년', '월', '일']].values.tolist()
+        '''
+        공휴일을 얻어옵니다.
+        self.national_holiday리스트에 공휴일을 저장.
+        '''
+        self.national_holiday = []
+        national_holiday_df = pd.read_excel('../Data/national_holiday.xlsx')
+        national_holiday_lst = national_holiday_df.loc[:, ['년', '월', '일']].values.tolist()
         
-        print(national_holiday_lst)
-        pass
+        for holiyday in national_holiday_lst:
+            year = int(holiyday[0])
+            month = int('{0:02d}'.format(int(holiyday[1])))
+            day = int('{0:02d}'.format(int(holiyday[2])))
+            self.national_holiday.append(str((datetime(year, month, day).date())))
+        
+    def __get_three_day(self, date):
+        '''
+        특정 날짜 기준으로 3번의 장 이후 날짜를 반환합니다.
+        공휴일과 주말을 제외한 날짜를 반환.
+        '''
+        day = 0 # 3번의 장이 지났는지 확인하기 위해
+        after = 1 #date 기준 after 이후
+        while day < 2:
+            temp_date = date + relativedelta(days=after)
+            if temp_date not in self.national_holiday and temp_date.weekday() in range(5):
+                day += 1
+            after += 1
+        return str(temp_date)
 
     def _get_co_code_with_co_name(self, co_name):
+        '''
+        기업명을 통해 naver_api에 필요한 기업 코드를 받아옵니다.
+        '''
         loaded_csv = pd.read_csv("../Data/data_1213_20211114.csv", engine='python')
         sorted_data = loaded_csv[['단축코드', '상장주식수', '한글 종목약명']].sort_values('한글 종목약명')
         return '{0:06d}'.format(int(sorted_data.loc[sorted_data['한글 종목약명'] == co_name]['단축코드']))
@@ -24,49 +50,46 @@ class Ylabeler:
     def _get_stock_price_with_co_code_and_date(self, co_code, start_date, end_date):
         """
         get stock price value with company code by naver pandas api
-        :param co_code: String
-        :return: integer
+        :param co_code, start_date, end_date: String
+        :return: list
         """
         df = stock_api.NaverDailyReader(symbols=co_code, start=start_date, end=end_date, adjust_price=True)
         df = df.read()
         closing_price = df['Close'].values
         
-        total = 0
+        stock_price = []
         for price in closing_price:
-            total += int(price)
-
-        print("length: {}".format(len(closing_price)))
-        print(closing_price)
-        print(total)
-
-        pass
+            stock_price.append(int(price))
         
+        return stock_price
         
 
     @staticmethod
-    def _convert_price_to_y(self, price):
+    def _convert_price_to_y(self, price_lst):
         """
         convert stock price to y data
-        :param price: Integer
+        :param price_lst: list
         :return: Double
         """
-        pass
+        return sum(price_lst) // 3 #일단 임의로 3으로 나눈거로 했음.
+        
 
     def __date_interval(self, date):
         """
-        3일 기준으로 날짜를 return
-
-        have to do
-        : 주말 일 때 데이터 관리하기.
+        데이터를 탐색할 시작 날짜와 끝 날짜를 반환합니다.
+        형식에 맞춰줘야 하기 때문에 월과 일을 두자리로 맞춰줍니다.
         """
         split_date = date.split('.')
         year = int(split_date[0])
         month = int('{0:02d}'.format(int(split_date[1])))
         day = int('{0:02d}'.format(int(split_date[2])))
         temp_date = datetime(year, month, day)
-        after_three_day = str((temp_date + relativedelta(days=2)).date())
+
+        after_three_day = self.__get_three_day(self, temp_date.date())
         temp_date = str(temp_date.date())
-        return ''.join(temp_date.split('-')), ''.join(after_three_day.split('-'))
+        
+        start, end = ''.join(temp_date.split('-')), ''.join(after_three_day.split('-'))
+        return start, end 
 
     def _ylaber_step(self, date, co_list):
         """
@@ -76,15 +99,18 @@ class Ylabeler:
         3) get stock price (naver api)
         4) convert price to y
         """
+        self._get_national_holiday(self)
+        y_data = []
+
         for i in range(len(date)):
             if co_list[i] != False:
                 co_code = self._get_co_code_with_co_name(self, co_list[i][0])
                 start_date, after_three_day = self.__date_interval(self, date[i])
-                self._get_stock_price_with_co_code_and_date(self, co_code, start_date, after_three_day)
-                
-        pass
+                stock_price_lst = self._get_stock_price_with_co_code_and_date(self, co_code, start_date, after_three_day)
+                stock_price_average = self._convert_price_to_y(self, stock_price_lst)
+                y_data.append(stock_price_average)
+        return y_data
 
 
 if __name__ == '__main__':
     ylabeler = Ylabeler()
-    ylabeler._get_national_holiday()
