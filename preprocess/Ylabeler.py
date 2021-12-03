@@ -1,15 +1,19 @@
 import pandas_datareader.naver as stock_api
 import pandas as pd
-import Preprocessor
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 class Ylabeler:
     """ this is class for y data labeling. Stock price to y data """
-    def __init__(self, date, co_list):
-        self.date = date
-        self.co_list = co_list
+    def __init__(self):
+        pass
+
+    def _get_national_holiday(self):
+        national_holiday = pd.read_excel('../Data/national_holiday.xlsx')
+        national_holiday_lst = national_holiday.loc[:, ['년', '월', '일']].values.tolist()
+        
+        print(national_holiday_lst)
         pass
 
     def _get_co_code_with_co_name(self, co_name):
@@ -25,8 +29,19 @@ class Ylabeler:
         """
         df = stock_api.NaverDailyReader(symbols=co_code, start=start_date, end=end_date, adjust_price=True)
         df = df.read()
-        print(df)
+        closing_price = df['Close'].values
+        
+        total = 0
+        for price in closing_price:
+            total += int(price)
+
+        print("length: {}".format(len(closing_price)))
+        print(closing_price)
+        print(total)
+
         pass
+        
+        
 
     @staticmethod
     def _convert_price_to_y(self, price):
@@ -40,6 +55,9 @@ class Ylabeler:
     def __date_interval(self, date):
         """
         3일 기준으로 날짜를 return
+
+        have to do
+        : 주말 일 때 데이터 관리하기.
         """
         split_date = date.split('.')
         year = int(split_date[0])
@@ -50,7 +68,7 @@ class Ylabeler:
         temp_date = str(temp_date.date())
         return ''.join(temp_date.split('-')), ''.join(after_three_day.split('-'))
 
-    def _ylaber_step(self):
+    def _ylaber_step(self, date, co_list):
         """
         this is function ylaber step
         1) get data from preprocessor
@@ -58,18 +76,15 @@ class Ylabeler:
         3) get stock price (naver api)
         4) convert price to y
         """
-        for i in range(len(self.date)):
-            if self.co_list[i] != False:
-                co_code = self._get_co_code_with_co_name(co_list[i][0])
-                start_date, after_three_day = self.__date_interval(self.date[i])
-                print(start_date, after_three_day)
-                self._get_stock_price_with_co_code_and_date(co_code, start_date, after_three_day)
-            
+        for i in range(len(date)):
+            if co_list[i] != False:
+                co_code = self._get_co_code_with_co_name(self, co_list[i][0])
+                start_date, after_three_day = self.__date_interval(self, date[i])
+                self._get_stock_price_with_co_code_and_date(self, co_code, start_date, after_three_day)
+                
         pass
 
 
 if __name__ == '__main__':
-    pre = Preprocessor.Preprocessor()
-    date, co_list = pre._preprocess_step()
-    ylabeler = Ylabeler(date, co_list)
-    ylabeler._ylaber_step()
+    ylabeler = Ylabeler()
+    ylabeler._get_national_holiday()

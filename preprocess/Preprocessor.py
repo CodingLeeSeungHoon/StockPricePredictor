@@ -18,7 +18,6 @@ from nltk import pos_tag
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-import json
 #from preprocess import Stopwords, Vectorization, Ylabeler
 import Stopwords, Vectorization, Ylabeler
 
@@ -102,7 +101,8 @@ class Preprocessor:
         :return:
         """
         tokenized_dict, date_dict, csv_co_list = self.__get_token_and_company_name()
-        return date_dict, csv_co_list
+        self.y_labeler.Ylabeler._ylaber_step(self.y_labeler.Ylabeler, date_dict, csv_co_list )
+        
         pass
 
 
