@@ -1,3 +1,4 @@
+from nltk.text import TokenSearcher
 import numpy as np
 import pandas as pd
 import re
@@ -20,7 +21,12 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 #from preprocess import Stopwords, Vectorization, Ylabeler
-import Stopwords, Vectorization, Ylabeler
+from Stopwords import Stopwords
+from Vectorization import Vectorization
+from Ylabeler import Ylabeler
+
+from gensim.models import Word2Vec
+from gensim.models import KeyedVectors
 
 class Preprocessor:
     def __init__(self, path="../Data/news_datatest.csv"):
@@ -30,9 +36,9 @@ class Preprocessor:
         self.co_name_list = set(self.__get_company_names())
 
         """ initializing tools for preprocess (stopwords, vectorization, y_labeling) """
-        self.stopwords = Stopwords
-        self.vectorization = Vectorization
-        self.y_labeler = Ylabeler
+        self.stopwords = Stopwords()
+        self.vectorization = Vectorization()
+        self.y_labeler = Ylabeler()
 
         """ output = CSV file with X and Y """
         self.output = None
@@ -62,7 +68,7 @@ class Preprocessor:
         sorted_data = loaded_csv[['단축코드', '상장주식수', '한글 종목약명']].sort_values('한글 종목약명')
         return sorted_data['한글 종목약명'].tolist()
 
-    def __get_token_and_company_name(self):
+    def _get_token_and_company_name(self):
         """
         공시 1차적으로 약한 토큰화 진행, 회사 이름 뽑아내기
         회사 이름 없거나 2개 이상으로 뽑히면 False로 처리
@@ -72,18 +78,30 @@ class Preprocessor:
         2021.10.10, 13
         """
         # print(self.raw_csv['title'])
+
+        # 기업명을 얻기 위한 딕셔너리
+        title_dict_for_getting_company = {}
+
+        # 최종적으로 replace와 stopwords 제거된 문장을 얻는 dictionary
         title_dict = {}
-        date_dict = []
-        raw_csv_to_co_name = []
+
+        # 날짜 
+        date_list = []
+
+        # csv로부터 구한 회사 이름
+        company_name = []
         
         for idx, row in self.raw_csv.iterrows():
-            title_dict[str(idx)] = word_tokenize(row['title'])
-            date_dict.append(word_tokenize(row['date'])[0])
+            title_dict_for_getting_company[str(idx)] = word_tokenize(row['title'])
+            date_list.append(word_tokenize(row['date'])[0])
 
-        for t in title_dict.values():
-            raw_csv_to_co_name.append(list(set(t) & self.co_name_list) if len(set(t) & self.co_name_list) == 1 else False)
+        for t in title_dict_for_getting_company.values():
+            company_name.append(list(set(t) & self.co_name_list) if len(set(t) & self.co_name_list) == 1 else False)
 
-        return title_dict, date_dict, raw_csv_to_co_name
+        for idx, row in self.raw_csv.iterrows():
+            title_dict[t] = self.stopwords._get_replace_stopwords(self.stopwords._get_delete_stopwords(row['title']))
+
+        return title_dict, date_list, company_name
 
     def __get_processed_csv(self):
         """
@@ -102,13 +120,25 @@ class Preprocessor:
         :return:
         """
         tokenized_dict, date_dict, csv_co_list = self.__get_token_and_company_name()
-        y_data = self.y_labeler.Ylabeler._ylaber_step(self.y_labeler.Ylabeler, date_dict, csv_co_list )
+       # y_data = self.y_labeler.Ylabeler._ylaber_step(self.y_labeler.Ylabeler, date_dict, csv_co_list )
         
+        lst = list(tokenized_dict.values())
+
+        model = Word2Vec(sg=0, size=100, window=3, min_count=1, workers=4)
+        model.build_vocab(sentences=lst)
+
+        model.train(sentences=lst, total_examples=len(lst), epochs=10)
+        model_result = model.wv.most_similar("인수", topn=10)
+        print(model_result)
+
+        # for t in tokenized_dict.values():
+        #     print(t)
         pass
 
 
 if __name__ == '__main__':
     preprocessor = Preprocessor()
-    preprocessor._preprocess_step()
+    print(preprocessor._get_token_and_company_name())
+    # preprocessor._preprocess_step()
 
     
