@@ -19,9 +19,8 @@ from nltk import pos_tag
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-import json
-from preprocess import Stopwords, Vectorization, Ylabeler
-
+#from preprocess import Stopwords, Vectorization, Ylabeler
+import Stopwords, Vectorization, Ylabeler
 
 class Preprocessor:
     def __init__(self, path="../Data/news_datatest.csv"):
@@ -68,19 +67,23 @@ class Preprocessor:
         공시 1차적으로 약한 토큰화 진행, 회사 이름 뽑아내기
         회사 이름 없거나 2개 이상으로 뽑히면 False로 처리
         :return: 공시 딕셔너리, 공시에서 언급된 회사이름 리스트
+        
+        뉴스에 맞는 날짜도 가져와야 해서 날짜 딕셔너리 추가.
+        2021.10.10, 13
         """
         # print(self.raw_csv['title'])
         title_dict = {}
+        date_dict = []
         raw_csv_to_co_name = []
-        for idx, title in enumerate(self.raw_csv['title']):
-            title_dict[str(idx)] = word_tokenize(title)
+        
+        for idx, row in self.raw_csv.iterrows():
+            title_dict[str(idx)] = word_tokenize(row['title'])
+            date_dict.append(word_tokenize(row['date'])[0])
 
-        # 수정하기~
         for t in title_dict.values():
-            raw_csv_to_co_name.append(set(t) & self.co_name_list if len(set(t) & self.co_name_list) == 1 else False)
+            raw_csv_to_co_name.append(list(set(t) & self.co_name_list) if len(set(t) & self.co_name_list) == 1 else False)
 
-        print(raw_csv_to_co_name)
-        return title_dict, raw_csv_to_co_name
+        return title_dict, date_dict, raw_csv_to_co_name
 
     def __get_processed_csv(self):
         """
@@ -88,8 +91,7 @@ class Preprocessor:
         :return:
         """
         pass
-
-
+    
     def _preprocess_step(self):
         """
         this is function preprocess step
@@ -99,11 +101,14 @@ class Preprocessor:
         4) return preprocessed csv
         :return:
         """
-        tokenized_dict, csv_co_list = self.__get_token_and_company_name()
-
+        tokenized_dict, date_dict, csv_co_list = self.__get_token_and_company_name()
+        y_data = self.y_labeler.Ylabeler._ylaber_step(self.y_labeler.Ylabeler, date_dict, csv_co_list )
+        
         pass
 
 
 if __name__ == '__main__':
     preprocessor = Preprocessor()
-    preprocessor._first_preprocessing()
+    preprocessor._preprocess_step()
+
+    
