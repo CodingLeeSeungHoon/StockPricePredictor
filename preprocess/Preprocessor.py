@@ -99,7 +99,7 @@ class Preprocessor:
             company_name.append(list(set(t) & self.co_name_list) if len(set(t) & self.co_name_list) == 1 else False)
 
         for idx, row in self.raw_csv.iterrows():
-            title_dict[t] = self.stopwords._get_replace_stopwords(self.stopwords._get_delete_stopwords(row['title']))
+            title_dict[idx] = self.stopwords._get_delete_stopwords(self.stopwords._get_replace_stopwords(row['title']))
 
         return title_dict, date_list, company_name
 
@@ -119,26 +119,27 @@ class Preprocessor:
         4) return preprocessed csv
         :return:
         """
-        tokenized_dict, date_dict, csv_co_list = self.__get_token_and_company_name()
-       # y_data = self.y_labeler.Ylabeler._ylaber_step(self.y_labeler.Ylabeler, date_dict, csv_co_list )
+        tokenized_dict, date_dict, csv_co_list = self._get_token_and_company_name()
+        # y_data = self.y_labeler._ylaber_step(date_dict, csv_co_list)
         
         lst = list(tokenized_dict.values())
+        print(tokenized_dict)
 
         model = Word2Vec(sg=0, size=100, window=3, min_count=1, workers=4)
         model.build_vocab(sentences=lst)
 
         model.train(sentences=lst, total_examples=len(lst), epochs=10)
-        model_result = model.wv.most_similar("인수", topn=10)
+        model_result = model.wv.most_similar("증가", topn=10)
         print(model_result)
 
         # for t in tokenized_dict.values():
         #     print(t)
-        pass
+
 
 
 if __name__ == '__main__':
     preprocessor = Preprocessor()
-    print(preprocessor._get_token_and_company_name())
-    # preprocessor._preprocess_step()
+    #preprocessor._get_token_and_company_name()
+    preprocessor._preprocess_step()
 
     
