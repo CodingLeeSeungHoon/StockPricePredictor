@@ -65,7 +65,7 @@ class Ylabeler:
         
 
     @staticmethod
-    def _convert_price_to_y(self, price_lst):
+    def _convert_price_to_y(price_lst):
         """
         convert stock price to y data
         :param price_lst: list
@@ -85,7 +85,7 @@ class Ylabeler:
         day = int('{0:02d}'.format(int(split_date[2])))
         temp_date = datetime(year, month, day)
 
-        after_three_day = self.__get_three_day(self, temp_date.date())
+        after_three_day = self.__get_three_day(temp_date.date())
         temp_date = str(temp_date.date())
         
         start, end = ''.join(temp_date.split('-')), ''.join(after_three_day.split('-'))
@@ -99,15 +99,16 @@ class Ylabeler:
         3) get stock price (naver api)
         4) convert price to y
         """
-        self._get_national_holiday(self)
+        self._get_national_holiday()
         y_data = []
 
         for i in range(len(date)):
             if co_list[i] != False:
-                co_code = self._get_co_code_with_co_name(self, co_list[i][0])
-                start_date, after_three_day = self.__date_interval(self, date[i])
-                stock_price_lst = self._get_stock_price_with_co_code_and_date(self, co_code, start_date, after_three_day)
-                stock_price_average = self._convert_price_to_y(self, stock_price_lst)
+                co_code = self._get_co_code_with_co_name(co_list[i][0])
+                start_date, after_three_day = self.__date_interval(date[i])
+                stock_price_lst = self._get_stock_price_with_co_code_and_date(co_code, start_date, after_three_day)
+                stock_price_average = self._convert_price_to_y(stock_price_lst)
+                print(stock_price_average)
                 y_data.append(stock_price_average)
         return y_data
 
