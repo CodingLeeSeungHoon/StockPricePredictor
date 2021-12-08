@@ -99,8 +99,12 @@ class Preprocessor:
             company_name.append(list(set(t) & self.co_name_list) if len(set(t) & self.co_name_list) == 1 else False)
 
         for idx, row in self.raw_csv.iterrows():
-            title_dict[idx] = self.stopwords._get_delete_stopwords(self.stopwords._get_replace_stopwords(row['title']))
+            # 기업명 뺴기
+            if company_name[idx] != False:
+                row['title'] = row['title'].replace(company_name[idx][0], '')
 
+            title_dict[idx] = self.stopwords._get_delete_stopwords(self.stopwords._get_replace_stopwords(row['title']))
+            print(title_dict[idx])
         return title_dict, date_list, company_name
 
     def __get_processed_csv(self):
@@ -123,7 +127,6 @@ class Preprocessor:
         # y_data = self.y_labeler._ylaber_step(date_dict, csv_co_list)
         
         lst = list(tokenized_dict.values())
-        print(tokenized_dict)
 
         model = Word2Vec(sg=0, size=100, window=3, min_count=1, workers=4)
         model.build_vocab(sentences=lst)
@@ -131,7 +134,7 @@ class Preprocessor:
         model.train(sentences=lst, total_examples=len(lst), epochs=10)
         model_result = model.wv.most_similar("증가", topn=10)
         print(model_result)
-
+ 
         # for t in tokenized_dict.values():
         #     print(t)
 
