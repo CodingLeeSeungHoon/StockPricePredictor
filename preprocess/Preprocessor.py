@@ -156,7 +156,109 @@ class Preprocessor:
         # for t in tokenized_dict.values():
         #     print(t) 
 
+        # -----------------------------데이터 불러오기
 
+        import tensorflow
+        from sklearn.model_selection import train_test_split
+        from tensorflow.keras.preprocessing.sequence import pad_sequences
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import Dense
+        from tensorflow.keras.layers import Flatten
+        from tensorflow.keras.layers import Embedding
+        from tensorflow.keras.layers import Conv1D, Conv2D
+        from tensorflow.keras.layers import GlobalMaxPool1D
+        import matplotlib.pyplot as plt
+
+        x_y_data = pd.DataFrame({'X': lst, 'Y': y_data})
+
+        result = list(x_y_data['X'])
+        TransferedModel = Word2Vec(size=300, min_count=1, workers=-1)
+        TransferedModel.build_vocab(result)  # 단어 생성.
+        TransferedModel.train(result, total_examples=len(result), epochs=100)  # 학습
+
+        # -----------------Word2vec으로부터 임베딩된 결과 추출 dict() 형태
+
+        embedding_results = dict()
+
+        for token in TransferedModel.wv.vocab.keys():
+            embedding_results[token] = TransferedModel.wv[token]
+
+        vocab_size = len(TransferedModel.wv.vocab.keys()) + 1
+        embedding_matrix = np.zeros((vocab_size, TransferedModel.wv.vector_size))
+
+        # ------------------------------- 단어의 정수화
+        word_to_id = dict()
+        id_to_word = dict()
+
+        all_words = TransferedModel.wv.vocab.keys()
+
+        for word in all_words:
+            if word not in word_to_id:
+                new_id = len(word_to_id) + 1
+                word_to_id[word] = new_id
+                id_to_word[new_id] = word
+
+        # print(word_to_id['분기'])
+
+        # ----------------------- 정수화 된 단어 매트릭스에 임베딩 결과로 저장
+        for word, i in word_to_id.items():
+            embedding_matrix[i, :] = embedding_results[word]
+
+        # -------------------CNN 기반 데이터 분석
+        encoded_result = []
+
+        for sent in result:
+            temp_id = []
+            for word in sent:
+                temp_id.append(word_to_id[word])
+            encoded_result.append(temp_id)
+
+        # print(encoded_result[3],encoded_result[4],encoded_result[8],encoded_result[9])
+
+        max_len = max(len(encoded_email) for encoded_email in encoded_result)
+
+        # -----------------------------------padding
+        padded_encoded_result = pad_sequences(encoded_result, padding='post')  # 앞 부분에다가 값을 넣어줌 maxlen 파라미터로 조정가능
+        # print(padded_encoded_result[0].shape,padded_encoded_result[0])
+
+        # -------------------------------------train, test 분리
+        indices = np.arange(len(padded_encoded_result))
+        Y = x_y_data['Y']
+        indices_train, indicies_test = train_test_split(indices, test_size=0.2, shuffle=True, random_state=0,stratify=Y)
+        #print(indices_train,len(indices_train),indicies_test,len(indicies_test))
+
+        train_X = padded_encoded_result[indices_train]
+        train_Y = Y.iloc[indices_train]
+
+        test_X = padded_encoded_result[indicies_test]
+        test_Y = Y.iloc[indicies_test]
+        #print(vocab_size,TransferedModel.wv.vector_size)
+
+        #-------------------------------cnn 모델 설계
+        embedding_layer = Embedding(vocab_size, TransferedModel.wv.vector_size, weights=[embedding_matrix],
+                                    input_length=max_len, trainable=False)  # word2vec 임베딩 결과 학습되어있음 true로 하면 파인튜닝
+        CNN = Sequential()
+        CNN.add(embedding_layer)
+        CNN.add(Conv1D(filters=10, kernel_size=1, activation='relu'))  # 너비가 고정되어있으므로 1D kernel_size 가 높이
+        CNN.add(GlobalMaxPool1D())
+        CNN.add(Flatten())
+        CNN.add(Dense(1, activation='softmax'))
+        print(CNN.summary())
+
+        #-----------------------------cnn 기반 학습
+        CNN.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        history = CNN.fit(x=train_X, y=np.array(train_Y), epochs=100, verbose=1, batch_size=32,
+                          validation_data=(test_X, np.array(test_Y)))
+
+        loss_train = history.history['loss']
+        loss_val = history.history['val_loss']
+        epochs = range(1, 101)
+        plt.plot(epochs, loss_train, 'b-o', label='Training loss')
+        plt.plot(epochs, loss_val, 'r-o', label='Valid loss')
+        plt.xlabel('epochs')
+        plt.ylabel('loss')
+        plt.legend()
+        plt.show()
 
 if __name__ == '__main__':
     preprocessor = Preprocessor()
