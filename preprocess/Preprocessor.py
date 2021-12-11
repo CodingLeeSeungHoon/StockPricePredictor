@@ -103,7 +103,7 @@ class Preprocessor:
             if company_name[idx] != False:
                 row['title'] = row['title'].replace(company_name[idx][0], '')
 
-            title_dict[idx] = self.stopwords._get_delete_stopwords(self.stopwords._get_replace_stopwords(row['title']))
+            title_dict[str(idx)] = self.stopwords._get_delete_stopwords(self.stopwords._get_replace_stopwords(row['title']))
         return title_dict, date_list, company_name
 
     def __get_processed_csv(self):
@@ -123,8 +123,15 @@ class Preprocessor:
         :return:
         """
         tokenized_dict, date_dict, csv_co_list = self._get_token_and_company_name()
-        # y_data = self.y_labeler._ylaber_step("cls", date_dict, csv_co_list)
-        
+
+        y_data = self.y_labeler._ylaber_step("cls", date_dict, csv_co_list)
+
+        for idx, co in enumerate(csv_co_list):
+            if co == False:
+                del tokenized_dict[str(idx)]
+         
+        print(len(tokenized_dict))
+        print(len(y_data))
         # print(f'하락개수: {y_data.count(0)}')
         # print(f'보합개수: {y_data.count(1)}')
         # print(f'상승개수: {y_data.count(2)}')
