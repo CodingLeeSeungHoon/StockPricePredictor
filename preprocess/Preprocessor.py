@@ -1,3 +1,8 @@
+import sys
+from os import path
+sys.path.append(path.dirname(__file__))
+
+
 from nltk.text import TokenSearcher
 import numpy as np
 import pandas as pd
