@@ -132,10 +132,10 @@ class Ylabeler:
                 
                 if type == "reg": # 회귀
                     stock_data = self._convert_price_to_y_for_reg(stock_price_lst)
-                    print(stock_data)
+                    #print(stock_data)
                 else: # 분류
                     stock_data = self._convert_price_to_y_for_cls(stock_price_lst)
-                    print(f'{i} : {stock_data}')
+                    #print(f'{i} : {stock_data}')
                 y_data.append(stock_data)
         return y_data
 
