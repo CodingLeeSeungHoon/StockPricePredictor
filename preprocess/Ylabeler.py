@@ -50,7 +50,9 @@ class Ylabeler:
         '''
         loaded_csv = pd.read_csv("../Data/data_1213_20211114.csv", engine='python')
         sorted_data = loaded_csv[['단축코드', '상장주식수', '한글 종목약명']].sort_values('한글 종목약명')
-        return '{0:06d}'.format(int(sorted_data.loc[sorted_data['한글 종목약명'] == co_name]['단축코드']))
+        code = sorted_data[sorted_data['한글 종목약명'] == co_name]['단축코드'].values[0]
+        # 문자열 6자리 밑이면 앞에 0으로 채워준다.
+        return code.zfill(6)
 
     def _get_stock_price_with_co_code_and_date(self, co_code, start_date, end_date):
         """
