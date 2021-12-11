@@ -104,7 +104,6 @@ class Preprocessor:
                 row['title'] = row['title'].replace(company_name[idx][0], '')
 
             title_dict[idx] = self.stopwords._get_delete_stopwords(self.stopwords._get_replace_stopwords(row['title']))
-            print(title_dict[idx])
         return title_dict, date_list, company_name
 
     def __get_processed_csv(self):
@@ -124,19 +123,31 @@ class Preprocessor:
         :return:
         """
         tokenized_dict, date_dict, csv_co_list = self._get_token_and_company_name()
-        # y_data = self.y_labeler._ylaber_step(date_dict, csv_co_list)
+        # y_data = self.y_labeler._ylaber_step("cls", date_dict, csv_co_list)
         
-        lst = list(tokenized_dict.values())
+        # print(f'하락개수: {y_data.count(0)}')
+        # print(f'보합개수: {y_data.count(1)}')
+        # print(f'상승개수: {y_data.count(2)}')
 
+        # with open('temp_y.txt', 'w', encoding='utf-8') as f:
+        #     for data in y_data:
+        #         f.write(str(data)+'\n')
+
+        # df = pd.DataFrame(tokenized_dict.values())
+        # print(df)
+        lst = list(tokenized_dict.values())
         model = Word2Vec(sg=0, size=100, window=3, min_count=1, workers=4)
         model.build_vocab(sentences=lst)
-
         model.train(sentences=lst, total_examples=len(lst), epochs=10)
-        model_result = model.wv.most_similar("증가", topn=10)
-        print(model_result)
+
+        print(model.wv.vectors.shape)
+
+
+        # model_result = model.wv.most_similar("증가", topn=10)
+        # print(model_result)
  
         # for t in tokenized_dict.values():
-        #     print(t)
+        #     print(t) 
 
 
 
