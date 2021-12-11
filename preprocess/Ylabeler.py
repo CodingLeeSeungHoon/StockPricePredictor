@@ -65,14 +65,36 @@ class Ylabeler:
         
 
     @staticmethod
-    def _convert_price_to_y(price_lst):
+    def _convert_price_to_y_for_reg(price_lst):
         """
-        convert stock price to y data
+        convert stock price to y data for regression
         :param price_lst: list
         :return: Double
         """
-        return sum(price_lst) // 3 #일단 임의로 3으로 나눈거로 했음.
-        
+        numerator = sum(price_lst) // 3 - price_lst[0]
+        y_percent_data = round((numerator / price_lst[0]) * 100, 3)
+        return y_percent_data
+
+    @staticmethod
+    def convert_to_cls(percent):
+        if percent > 2:
+            return 2 # 상승
+        elif percent >= -2:
+            return 1 # 보합
+        else:
+            return 0 # 하락
+
+    @staticmethod
+    def _convert_price_to_y_for_cls(price_lst):
+        """
+        convert stock price to y data for classification
+        :param price_lst: list
+        :return: 0, 1, 2 (0 = 하락 / 1 = 보합 / 2 = 상승)
+        """
+        numerator = sum(price_lst) // 3 - price_lst[0]
+        y_percent_data = round((numerator / price_lst[0]) * 100, 3)
+        return Ylabeler.convert_to_cls(y_percent_data)
+
 
     def __date_interval(self, date):
         """
@@ -91,7 +113,7 @@ class Ylabeler:
         start, end = ''.join(temp_date.split('-')), ''.join(after_three_day.split('-'))
         return start, end 
 
-    def _ylaber_step(self, date, co_list):
+    def _ylaber_step(self, type, date, co_list):
         """
         this is function ylaber step
         1) get data from preprocessor
@@ -107,9 +129,14 @@ class Ylabeler:
                 co_code = self._get_co_code_with_co_name(co_list[i][0])
                 start_date, after_three_day = self.__date_interval(date[i])
                 stock_price_lst = self._get_stock_price_with_co_code_and_date(co_code, start_date, after_three_day)
-                stock_price_average = self._convert_price_to_y(stock_price_lst)
-                print(stock_price_average)
-                y_data.append(stock_price_average)
+                
+                if type == "reg": # 회귀
+                    stock_data = self._convert_price_to_y_for_reg(stock_price_lst)
+                    print(stock_data)
+                else: # 분류
+                    stock_data = self._convert_price_to_y_for_cls(stock_price_lst)
+                    print(f'{i} : {stock_data}')
+                y_data.append(stock_data)
         return y_data
 
 
