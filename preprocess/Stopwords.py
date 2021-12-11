@@ -1,3 +1,4 @@
+
 from konlpy.tag import Kkma
 import re
 
@@ -8,7 +9,7 @@ class Stopwords:
         self.delete_stopwords = []
         self.replace_stopwords = []
 
-        self.stopwords_file = open("stopwords.txt", 'r', encoding='UTF8')
+        self.stopwords_file = open("../Data/stopwords.txt", 'r', encoding='UTF8')
         self.stopwords = []
         self.stopwords_file_text = self.stopwords_file.readlines()
         for words in self.stopwords_file_text:

@@ -1,3 +1,8 @@
+import sys
+from os import path
+sys.path.append(path.dirname(__file__))
+
+
 import pandas_datareader.naver as stock_api
 import pandas as pd
 
@@ -56,11 +61,9 @@ class Ylabeler:
         df = stock_api.NaverDailyReader(symbols=co_code, start=start_date, end=end_date, adjust_price=True)
         df = df.read()
         closing_price = df['Close'].values
-        
         stock_price = []
         for price in closing_price:
             stock_price.append(int(price))
-        
         return stock_price
         
 
@@ -101,15 +104,13 @@ class Ylabeler:
         데이터를 탐색할 시작 날짜와 끝 날짜를 반환합니다.
         형식에 맞춰줘야 하기 때문에 월과 일을 두자리로 맞춰줍니다.
         """
-        split_date = date.split('.')
+        split_date = date.split('-')
         year = int(split_date[0])
         month = int('{0:02d}'.format(int(split_date[1])))
         day = int('{0:02d}'.format(int(split_date[2])))
         temp_date = datetime(year, month, day)
-
         after_three_day = self.__get_three_day(temp_date.date())
         temp_date = str(temp_date.date())
-        
         start, end = ''.join(temp_date.split('-')), ''.join(after_three_day.split('-'))
         return start, end 
 
@@ -129,14 +130,21 @@ class Ylabeler:
                 co_code = self._get_co_code_with_co_name(co_list[i][0])
                 start_date, after_three_day = self.__date_interval(date[i])
                 stock_price_lst = self._get_stock_price_with_co_code_and_date(co_code, start_date, after_three_day)
-                
+                #print(stock_price_lst)
                 if type == "reg": # 회귀
-                    stock_data = self._convert_price_to_y_for_reg(stock_price_lst)
+                    if len(stock_price_lst) == 3:
+                        stock_data = self._convert_price_to_y_for_reg(stock_price_lst)
+                        y_data.append(stock_data)
+                    else:
+                        co_list[i] = False
                     #print(stock_data)
                 else: # 분류
-                    stock_data = self._convert_price_to_y_for_cls(stock_price_lst)
-                    #print(f'{i} : {stock_data}')
-                y_data.append(stock_data)
+                    if len(stock_price_lst) == 3:
+                        stock_data = self._convert_price_to_y_for_cls(stock_price_lst)
+                        print(f'{i} : {stock_data}')
+                        y_data.append(stock_data)
+                    else:
+                        co_list[i] = False
         return y_data
 
 
