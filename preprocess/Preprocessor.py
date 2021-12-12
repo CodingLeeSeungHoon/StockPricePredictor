@@ -34,7 +34,7 @@ from gensim.models import Word2Vec
 from gensim.models import KeyedVectors
 
 class Preprocessor:
-    def __init__(self, path="../Data/news_datatest.csv"):
+    def __init__(self, path="../Data/news_datatest1.csv"):
         # raw_csv = pandas instance
         self.raw_csv = self.__get_csv(path)
         # company name list from csv
@@ -165,7 +165,7 @@ class Preprocessor:
 
         # -----------------------------데이터 불러오기
 
-        import tensorflow
+        import tensorflow as tf
         from sklearn.model_selection import train_test_split
         from tensorflow.keras.preprocessing.sequence import pad_sequences
         from tensorflow.keras.models import Sequential
@@ -180,9 +180,21 @@ class Preprocessor:
         from sklearn.metrics import classification_report
 
         x_y_data = pd.DataFrame({'X': lst, 'Y': y_data})
+        zero_x_y_data = x_y_data[x_y_data['Y'] == 0]
+        one_x_y_data = x_y_data[x_y_data['Y'] == 1]
+        two_x_y_data = x_y_data[x_y_data['Y'] == 2]
+
+        min_count = min(y_data.count(0), y_data.count(1), y_data.count(2))
+
+        zero_x_y_data = zero_x_y_data.sample(frac=min_count / y_data.count(0), random_state=1000)
+        one_x_y_data = one_x_y_data.sample(frac=min_count / y_data.count(1), random_state=1000)
+        two_x_y_data = two_x_y_data.sample(frac=min_count / y_data.count(2), random_state=1000)
+
+        x_y_data = pd.concat([zero_x_y_data, one_x_y_data, two_x_y_data])
+        print("불균형 처리",x_y_data['Y'].value_counts())
 
         result = list(x_y_data['X'])
-        TransferedModel = Word2Vec(size=300, min_count=1, workers=-1)
+        TransferedModel = Word2Vec(size=300, window=5,min_count=1, workers=-1)
         TransferedModel.build_vocab(result)  # 단어 생성.
         TransferedModel.train(result, total_examples=len(result), epochs=100)  # 학습
 
@@ -225,7 +237,7 @@ class Preprocessor:
 
         # print(encoded_result[3],encoded_result[4],encoded_result[8],encoded_result[9])
 
-        max_len = max(len(encoded_email) for encoded_email in encoded_result)
+        max_len = max(len(encoded_title) for encoded_title in encoded_result)
 
         # -----------------------------------padding
         padded_encoded_result = pad_sequences(encoded_result, padding='post')  # 앞 부분에다가 값을 넣어줌 maxlen 파라미터로 조정가능
@@ -242,43 +254,74 @@ class Preprocessor:
 
         test_X = padded_encoded_result[indicies_test]
         test_Y = Y.iloc[indicies_test]
-        #print(vocab_size,TransferedModel.wv.vector_size)
+        print("vocab size=", vocab_size,"vector size=",TransferedModel.wv.vector_size,"max len=",max_len)
 
         #-------------------------------cnn 모델 설계
+
+        filter_list=[10,30,50]
+        kernel_list=[1,2]
+        conv_activation_list=['relu','sigmoid']
+        optimizer_list=['adam','sgd']
+        batch_size_list=[32,64]
+        info_list=[]
+        result_list=[]
+        class_result_list=[]
+
         embedding_layer = Embedding(vocab_size, TransferedModel.wv.vector_size, weights=[embedding_matrix],
                                     input_length=max_len, trainable=False)  # word2vec 임베딩 결과 학습되어있음 true로 하면 파인튜닝
 
-        CNN = Sequential()
-        CNN.add(embedding_layer)
-        CNN.add(Conv1D(filters=50, kernel_size=1, activation='relu'))  # 너비가 고정되어있으므로 1D kernel_size 가 높이
-        CNN.add(GlobalMaxPool1D())
-        CNN.add(Flatten())
-        CNN.add(Dense(3, activation='softmax'))
-        print(CNN.summary())
+        n = 0
+        for f in filter_list:
+            for k in kernel_list:
+                for c in conv_activation_list:
+                    for o in optimizer_list:
+                        for b in batch_size_list:
 
-        # -----------------------------cnn 기반 학습
-        CNN.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        history = CNN.fit(x=train_X, y=to_categorical(np.array(train_Y)), epochs=100, verbose=1, batch_size=32,
-                          validation_data=(test_X, to_categorical(np.array(test_Y))))
+                            CNN = Sequential()
+                            CNN.add(embedding_layer)
+                            CNN.add(Conv1D(filters=f, kernel_size=k,
+                                           activation=c))  # 너비가 고정되어있으므로 1D kernel_size 가 높이
+                            CNN.add(GlobalMaxPool1D())
+                            CNN.add(Flatten())
+                            # CNN.add(Dense(30, activation='relu'))
+                            # CNN.add(Dense(10, activation='relu'))
+                            CNN.add(Dense(3, activation='softmax'))
+                            print(CNN.summary())
+                            # print(Flatten(),type(Flatten()),GlobalMaxPool1D(),type(GlobalMaxPool1D()))
 
-        loss_train = history.history['loss']
-        loss_val = history.history['val_loss']
-        epochs = range(1, 101)
-        plt.plot(epochs, loss_train, 'b-o', label='Training loss')
-        plt.plot(epochs, loss_val, 'r-o', label='Valid loss')
-        plt.xlabel('epochs')
-        plt.ylabel('loss')
-        plt.legend()
-        plt.show()
+                            # -----------------------------cnn 기반 학습
+                            CNN.compile(loss='categorical_crossentropy', optimizer=o, metrics=['accuracy'])
+                            history = CNN.fit(x=train_X, y=to_categorical(np.array(train_Y)), epochs=100, verbose=1,
+                                              batch_size=b,
+                                              validation_data=(test_X, to_categorical(np.array(test_Y))))
 
-        predy = CNN.predict(test_X)
-        predy = np.argmax(predy, axis=1)
+                            loss_train = history.history['loss']
+                            loss_val = history.history['val_loss']
+                            #epochs = range(1, 101)
+                            #plt.plot(epochs, loss_train, 'b-o', label='Training loss')
+                            #plt.plot(epochs, loss_val, 'r-o', label='Valid loss')
+                            #plt.xlabel('epochs')
+                            #plt.ylabel('loss')
+                            #plt.legend()
+                            #plt.show()
 
-        print(predy, type(predy))
+                            predy = CNN.predict(test_X)
+                            predy = np.argmax(predy, axis=1)
 
-        print("0 =",np.count_nonzero(predy == 1),"1 =",np.count_nonzero(predy == 1),"2 =",np.count_nonzero(predy == 2))
-        print(confusion_matrix(test_Y, predy))
-        print(classification_report(test_Y, predy, target_names=['0', '1', '2']))
+                            print(predy, type(predy))
+
+                            print(n,"결과 0 =", np.count_nonzero(predy == 0), "1 =", np.count_nonzero(predy == 1), "2 =",
+                                  np.count_nonzero(predy == 2))
+                            info_list.append([f,k,c,o,b])
+                            result_list.append(confusion_matrix(test_Y, predy))
+                            class_result_list.append(classification_report(test_Y, predy, target_names=['0', '1', '2']))
+                            #print(confusion_matrix(test_Y, predy))
+                            #print(classification_report(test_Y, predy, target_names=['0', '1', '2']))
+                            n=n+1
+                            print(n,"번째 완료")
+        for a in range(len(result_list)):
+            print("\n",info_list[a],"\n",result_list[a],"\n",class_result_list[a])
+
 
 
 if __name__ == '__main__':
