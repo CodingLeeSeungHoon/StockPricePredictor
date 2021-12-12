@@ -97,6 +97,7 @@ class Preprocessor:
         company_name = []
         
         for idx, row in self.raw_csv.iterrows():
+            print(idx, "번째 기업명 추출")
             title_dict_for_getting_company[str(idx)] = word_tokenize(row['title'])
             date_list.append(word_tokenize(row['date'])[0])
 
@@ -105,6 +106,7 @@ class Preprocessor:
 
         for idx, row in self.raw_csv.iterrows():
             # 기업명 뺴기
+            print(idx,"번째 기업명빼기")
             if company_name[idx] != False:
                 row['title'] = row['title'].replace(company_name[idx][0], '')
 
@@ -137,9 +139,9 @@ class Preprocessor:
          
         print(len(tokenized_dict))
         print(len(y_data))
-        # print(f'하락개수: {y_data.count(0)}')
-        # print(f'보합개수: {y_data.count(1)}')
-        # print(f'상승개수: {y_data.count(2)}')
+        print(f'하락개수: {y_data.count(0)}')
+        print(f'보합개수: {y_data.count(1)}')
+        print(f'상승개수: {y_data.count(2)}')
 
         # with open('temp_y.txt', 'w', encoding='utf-8') as f:
         #     for data in y_data:
@@ -148,11 +150,11 @@ class Preprocessor:
         # df = pd.DataFrame(tokenized_dict.values())
         # print(df)
         lst = list(tokenized_dict.values())
-        model = Word2Vec(sg=0, size=100, window=3, min_count=1, workers=4)
-        model.build_vocab(sentences=lst)
-        model.train(sentences=lst, total_examples=len(lst), epochs=10)
+        #model = Word2Vec(sg=0, size=100, window=3, min_count=1, workers=4)
+        #model.build_vocab(sentences=lst)
+        #model.train(sentences=lst, total_examples=len(lst), epochs=10)
 
-        print(model.wv.vectors.shape)
+        #print(model.wv.vectors.shape)
 
 
         # model_result = model.wv.most_similar("증가", topn=10)
@@ -172,7 +174,10 @@ class Preprocessor:
         from tensorflow.keras.layers import Embedding
         from tensorflow.keras.layers import Conv1D, Conv2D
         from tensorflow.keras.layers import GlobalMaxPool1D
+        from tensorflow.keras.utils import to_categorical
         import matplotlib.pyplot as plt
+        from sklearn.metrics import confusion_matrix
+        from sklearn.metrics import classification_report
 
         x_y_data = pd.DataFrame({'X': lst, 'Y': y_data})
 
@@ -242,18 +247,19 @@ class Preprocessor:
         #-------------------------------cnn 모델 설계
         embedding_layer = Embedding(vocab_size, TransferedModel.wv.vector_size, weights=[embedding_matrix],
                                     input_length=max_len, trainable=False)  # word2vec 임베딩 결과 학습되어있음 true로 하면 파인튜닝
+
         CNN = Sequential()
         CNN.add(embedding_layer)
-        CNN.add(Conv1D(filters=10, kernel_size=1, activation='relu'))  # 너비가 고정되어있으므로 1D kernel_size 가 높이
+        CNN.add(Conv1D(filters=50, kernel_size=1, activation='relu'))  # 너비가 고정되어있으므로 1D kernel_size 가 높이
         CNN.add(GlobalMaxPool1D())
         CNN.add(Flatten())
-        CNN.add(Dense(1, activation='softmax'))
+        CNN.add(Dense(3, activation='softmax'))
         print(CNN.summary())
 
-        #-----------------------------cnn 기반 학습
-        CNN.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-        history = CNN.fit(x=train_X, y=np.array(train_Y), epochs=100, verbose=1, batch_size=32,
-                          validation_data=(test_X, np.array(test_Y)))
+        # -----------------------------cnn 기반 학습
+        CNN.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        history = CNN.fit(x=train_X, y=to_categorical(np.array(train_Y)), epochs=100, verbose=1, batch_size=32,
+                          validation_data=(test_X, to_categorical(np.array(test_Y))))
 
         loss_train = history.history['loss']
         loss_val = history.history['val_loss']
@@ -264,6 +270,16 @@ class Preprocessor:
         plt.ylabel('loss')
         plt.legend()
         plt.show()
+
+        predy = CNN.predict(test_X)
+        predy = np.argmax(predy, axis=1)
+
+        print(predy, type(predy))
+
+        print("0 =",np.count_nonzero(predy == 1),"1 =",np.count_nonzero(predy == 1),"2 =",np.count_nonzero(predy == 2))
+        print(confusion_matrix(test_Y, predy))
+        print(classification_report(test_Y, predy, target_names=['0', '1', '2']))
+
 
 if __name__ == '__main__':
     preprocessor = Preprocessor()

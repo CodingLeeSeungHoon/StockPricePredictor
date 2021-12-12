@@ -82,9 +82,9 @@ class Ylabeler:
 
     @staticmethod
     def convert_to_cls(percent):
-        if percent > 2:
+        if percent > 1:
             return 2 # 상승
-        elif percent >= -2:
+        elif percent >= -1:
             return 1 # 보합
         else:
             return 0 # 하락
