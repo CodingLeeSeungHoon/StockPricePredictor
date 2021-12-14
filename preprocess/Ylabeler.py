@@ -1,7 +1,7 @@
 import sys
 from os import path
-sys.path.append(path.dirname(__file__))
 
+sys.path.append(path.dirname(__file__))
 
 import pandas_datareader.naver as stock_api
 import pandas as pd
@@ -10,8 +10,10 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from requests.models import encode_multipart_formdata
 
+
 class Ylabeler:
     """ this is class for y data labeling. Stock price to y data """
+
     def __init__(self):
         pass
 
@@ -23,24 +25,26 @@ class Ylabeler:
         self.national_holiday = []
         national_holiday_df = pd.read_excel('../Data/national_holiday.xlsx')
         national_holiday_lst = national_holiday_df.loc[:, ['년', '월', '일']].values.tolist()
-        
+
         for holiyday in national_holiday_lst:
             year = int(holiyday[0])
             month = int('{0:02d}'.format(int(holiyday[1])))
             day = int('{0:02d}'.format(int(holiyday[2])))
             self.national_holiday.append(str((datetime(year, month, day).date())))
-        
+
     def __get_three_day(self, date):
         '''
         특정 날짜 기준으로 3번의 장 이후 날짜를 반환합니다.
         공휴일과 주말을 제외한 날짜를 반환.
         '''
-        day = 0 # 3번의 장이 지났는지 확인하기 위해
-        after = 1 #date 기준 after 이후
+        day = 0  # 3번의 장이 지났는지 확인하기 위해
+        after = 1  # date 기준 after 이후
         while day < 2:
             temp_date = date + relativedelta(days=after)
-            if temp_date not in self.national_holiday and temp_date.weekday() in range(5):
-                day += 1
+            if str(temp_date) not in self.national_holiday:
+                if temp_date.weekday() in range(5):
+                    #print(temp_date)
+                    day += 1
             after += 1
         return str(temp_date)
 
@@ -67,7 +71,6 @@ class Ylabeler:
         for price in closing_price:
             stock_price.append(int(price))
         return stock_price
-        
 
     @staticmethod
     def _convert_price_to_y_for_reg(price_lst):
@@ -83,11 +86,11 @@ class Ylabeler:
     @staticmethod
     def convert_to_cls(percent):
         if percent > 1:
-            return 2 # 상승
+            return 2  # 상승
         elif percent >= -1:
-            return 1 # 보합
+            return 1  # 보합
         else:
-            return 0 # 하락
+            return 0  # 하락
 
     @staticmethod
     def _convert_price_to_y_for_cls(price_lst):
@@ -99,7 +102,6 @@ class Ylabeler:
         numerator = sum(price_lst) // 3 - price_lst[0]
         y_percent_data = round((numerator / price_lst[0]) * 100, 3)
         return Ylabeler.convert_to_cls(y_percent_data)
-
 
     def __date_interval(self, date):
         """
@@ -114,39 +116,53 @@ class Ylabeler:
         after_three_day = self.__get_three_day(temp_date.date())
         temp_date = str(temp_date.date())
         start, end = ''.join(temp_date.split('-')), ''.join(after_three_day.split('-'))
-        return start, end 
+        return start, end
 
     def _ylaber_step(self, type, date, co_list):
         """
         this is function ylaber step
         1) get data from preprocessor
-        2) each data get co_code 
+        2) each data get co_code
         3) get stock price (naver api)
         4) convert price to y
         """
         self._get_national_holiday()
         y_data = []
+        total_true_count = 0
+        false_count = 0
 
         for i in range(len(date)):
             if co_list[i] != False:
                 co_code = self._get_co_code_with_co_name(co_list[i][0])
                 start_date, after_three_day = self.__date_interval(date[i])
                 stock_price_lst = self._get_stock_price_with_co_code_and_date(co_code, start_date, after_three_day)
-                #print(stock_price_lst)
-                if type == "reg": # 회귀
+                # print("길이",len(stock_price_lst))
+                # print(stock_price_lst)
+                if type == "reg":  # 회귀
                     if len(stock_price_lst) == 3:
                         stock_data = self._convert_price_to_y_for_reg(stock_price_lst)
+                        if i % 1000 == 0:
+                            print(">> {}번째 계산 결과..".format(i), "변화율 =", stock_data, "%")
+                        total_true_count = total_true_count + 1
                         y_data.append(stock_data)
                     else:
                         co_list[i] = False
-                    #print(stock_data)
-                else: # 분류
+                        total_true_count = total_true_count + 1
+                    # print(stock_data)
+                else:  # 분류
                     if len(stock_price_lst) == 3:
                         stock_data = self._convert_price_to_y_for_cls(stock_price_lst)
-                        print(f'{i} : {stock_data}')
+                        if i % 1000 == 0:
+                            print(">> {}번째 계산 결과..".format(i), "class =", stock_data)
+                        total_true_count = total_true_count + 1
                         y_data.append(stock_data)
                     else:
                         co_list[i] = False
+                        total_true_count = total_true_count + 1
+            else:
+                false_count = false_count+1
+
+        #print(">> 총 읽은 데이터 수 =",  total_true_count+false_count, "실제 계산된 데이터 수 =", total_true_count, "계산되지않은 데이터 수 =", false_count)
         return y_data
 
 
