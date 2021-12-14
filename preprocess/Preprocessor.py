@@ -2,12 +2,8 @@ import sys
 from os import path
 sys.path.append(path.dirname(__file__))
 
-
-from nltk.text import TokenSearcher
 import numpy as np
 import pandas as pd
-import re
-import nltk
 
 from nltk.tokenize import word_tokenize as wt
 from nltk.tokenize import WordPunctTokenizer
@@ -25,7 +21,6 @@ from nltk import pos_tag
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-#from preprocess import Stopwords, Vectorization, Ylabeler
 from Stopwords import Stopwords
 from Vectorization import Vectorization
 from Ylabeler import Ylabeler
@@ -66,7 +61,7 @@ class Preprocessor:
     @staticmethod
     def __get_csv(path):
         """
-        get raw data csv
+        csv로 부터 데이터를 받아온다.
         :param path: String type
         :return: pandas instance
         """
@@ -74,7 +69,7 @@ class Preprocessor:
 
     def _test_open_csv(self):
         """
-        test code for raw csv data
+        csv데이터 출력.
         :return:
         """
         print(self.raw_csv)
@@ -92,12 +87,11 @@ class Preprocessor:
         """
         공시 1차적으로 약한 토큰화 진행, 회사 이름 뽑아내기
         회사 이름 없거나 2개 이상으로 뽑히면 False로 처리
-        :return: 공시 딕셔너리, 공시에서 언급된 회사이름 리스트
+        :return: 공시 딕셔너리, 날짜 리스트, 공시에서 언급된 회사이름 리스트
 
         뉴스에 맞는 날짜도 가져와야 해서 날짜 딕셔너리 추가.
         2021.10.10, 13
         """
-        # print(self.raw_csv['title'])
         print(">> 총 데이터 수 = {}".format(len(self.raw_csv)))
         # 기업명을 얻기 위한 딕셔너리
         title_dict_for_getting_company = {}
@@ -111,15 +105,19 @@ class Preprocessor:
         # csv로부터 구한 회사 이름
         company_name = []
 
+        # 기업명을 title_dict_for_getting_company에 추가.
+        # 날짜를 date_list에 추가
         for idx, row in self.raw_csv.iterrows():
             if idx % 1000 == 0:
                 print(">> {}번째 기업명 추출 작업 실행 완료..".format(idx))
             title_dict_for_getting_company[str(idx)] = word_tokenize(row['title'])
             date_list.append(word_tokenize(row['date'])[0])
 
+        # 기업명이 안뽑아 지거나 2개 이상 뽑히는 경우 False로 처리
         for t in title_dict_for_getting_company.values():
             company_name.append(list(set(t) & self.co_name_list) if len(set(t) & self.co_name_list) == 1 else False)
 
+        # False로 처리한 기업들 제거 후 불용어 처리
         for idx, row in self.raw_csv.iterrows():
             if idx % 1000 == 0:
                 print(">> {}번째 기업명 제거 작업 실행 완료..".format(idx))

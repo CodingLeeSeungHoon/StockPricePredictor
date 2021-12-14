@@ -12,15 +12,16 @@ from requests.models import encode_multipart_formdata
 
 
 class Ylabeler:
-    """ this is class for y data labeling. Stock price to y data """
+    """ 
+    this is class for y data labeling. Stock price to y data
+    """
 
     def __init__(self):
         pass
 
     def _get_national_holiday(self):
         '''
-        공휴일을 얻어옵니다.
-        self.national_holiday리스트에 공휴일을 저장.
+        self.national_holiday리스트에 공휴일만 따로 저장합니다.
         '''
         self.national_holiday = []
         national_holiday_df = pd.read_excel('../Data/national_holiday.xlsx')
@@ -34,33 +35,35 @@ class Ylabeler:
 
     def __get_three_day(self, date):
         '''
-        특정 날짜 기준으로 3번의 장 이후 날짜를 반환합니다.
-        공휴일과 주말을 제외한 날짜를 반환.
+        date를 기준으로 공휴일과 주말을 제외한 
+        3일 이후 날짜를 반환합니다.
+        return : str
         '''
-        day = 0  # 3번의 장이 지났는지 확인하기 위해
-        after = 1  # date 기준 after 이후
+        day = 0  
+        after = 1 
         while day < 2:
             temp_date = date + relativedelta(days=after)
             if str(temp_date) not in self.national_holiday:
                 if temp_date.weekday() in range(5):
-                    #print(temp_date)
                     day += 1
             after += 1
         return str(temp_date)
 
     def _get_co_code_with_co_name(self, co_name):
         '''
-        기업명을 통해 naver_api에 필요한 기업 코드를 받아옵니다.
+        기업명을 통해 pandas_naver_api 에 필요한 기업 코드를 받아옵니다.
+        기업 코드는 6자리로 맞춰줍니다.
+        return str
         '''
         loaded_csv = pd.read_csv("../Data/data_1213_20211114.csv", engine='python')
         sorted_data = loaded_csv[['단축코드', '상장주식수', '한글 종목약명']].sort_values('한글 종목약명')
         code = sorted_data[sorted_data['한글 종목약명'] == co_name]['단축코드'].values[0]
-        # 문자열 6자리 밑이면 앞에 0으로 채워준다.
+        
         return code.zfill(6)
 
     def _get_stock_price_with_co_code_and_date(self, co_code, start_date, end_date):
         """
-        get stock price value with company code by naver pandas api
+        naver pandas api를 이용하여 주식 가격을 받아옵니다.
         :param co_code, start_date, end_date: String
         :return: list
         """
@@ -85,6 +88,9 @@ class Ylabeler:
 
     @staticmethod
     def convert_to_cls(percent):
+        """
+        변동 퍼센트 기준을 1%로 잡음.
+        """
         if percent > 1:
             return 2  # 상승
         elif percent >= -1:
@@ -106,7 +112,6 @@ class Ylabeler:
     def __date_interval(self, date):
         """
         데이터를 탐색할 시작 날짜와 끝 날짜를 반환합니다.
-        형식에 맞춰줘야 하기 때문에 월과 일을 두자리로 맞춰줍니다.
         """
         split_date = date.split('-')
         year = int(split_date[0])
@@ -121,10 +126,13 @@ class Ylabeler:
     def _ylaber_step(self, type, date, co_list):
         """
         this is function ylaber step
-        1) get data from preprocessor
-        2) each data get co_code
-        3) get stock price (naver api)
-        4) convert price to y
+        1) preprocessor로 데이터를 받는다.
+        2) 기업명을 바탕으로 기업 코드를 받아온다.
+        3) 공시 날짜를 기반으로 3번의 장 이후 날짜를 받는다.
+        4) 3일치 주식 가격을 받아온다.
+        5) cls, reg 별로 다른 y_data를 만든다.
+        :param price_lst: type(cls, reg), 공시 날짜, 기업명 리스트
+        :return list
         """
         self._get_national_holiday()
         y_data = []

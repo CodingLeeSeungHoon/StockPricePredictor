@@ -1,4 +1,3 @@
-# crawling data from naver finacnce
 import requests
 import json
 from bs4 import BeautifulSoup
@@ -7,11 +6,11 @@ from bs4 import BeautifulSoup
 class Crawl:
   def __init__(self):
     self.base_url = "https://finance.naver.com/news/news_list.naver"
-    self.market_notice_url = "https://finance.naver.com/news/market_notice.naver"
 
   def news_crawl(self, date):
     '''
     뉴스포커스 > 공시 메모 크롤링
+    크롤링한 정보를 news_data.json에 입력
     '''
     news_data = self.openJson()
 
@@ -50,44 +49,6 @@ class Crawl:
       page_num += 1
 
     self.writeJson(news_data)
-  
-  def market_notice(self, date):
-    '''
-    투자정보 > 공시정보 크롤링.
-    '''
-    news_data = self.openJson()
-
-    page = 1
-    while True:
-      page_url = self.market_notice_url + f"?&page={page}"
-      html = requests.get(page_url)
-
-      if html.status_code == 200:
-        html = html.text
-        soup = BeautifulSoup(html, 'html.parser')
-
-        disclosureList = soup.find_all('tr')
-        for disclosure in disclosureList:
-          try:
-            title = disclosure.find("td", class_="publicSubject").text
-            title = title.strip("\n")
-
-            wdate = disclosure.find("td", class_="wdate").text
-            w = wdate.replace('.','')
-            w = '20' + w[:6]
-            if int(w) < int(date):
-              break
-            wdate = wdate.replace('.','-')
-            news_data.append({'title':title, 'date':'20'+wdate })
-          except (AttributeError, ModuleNotFoundError):
-            pass
-
-      if int(w) < int(date):
-        break
-      page += 1
-    
-    self.writeJson(news_data)
-
 
   def writeJson(self, data):
     with open("newsdata/news_data.json", "w", encoding='UTF-8') as json_file:
