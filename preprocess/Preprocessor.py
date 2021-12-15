@@ -5,43 +5,29 @@ sys.path.append(path.dirname(__file__))
 import numpy as np
 import pandas as pd
 
-from nltk.tokenize import word_tokenize as wt
-from nltk.tokenize import WordPunctTokenizer
-from nltk.tokenize import sent_tokenize
-
-import konlpy
-from konlpy.tag import Kkma
-from konlpy.tag import Hannanum
-from konlpy.tag import Okt
-from konlpy.tag import Komoran
-
-from nltk.stem import WordNetLemmatizer as lemma
-from nltk.stem import PorterStemmer as stemming
-from nltk import pos_tag
-from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 from Stopwords import Stopwords
-from Vectorization import Vectorization
 from Ylabeler import Ylabeler
 
 from gensim.models import Word2Vec
-from gensim.models import KeyedVectors
 
-import tensorflow as tf
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+from sklearn.metrics import r2_score, mean_squared_log_error
+
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Embedding
-from tensorflow.keras.layers import Conv1D, Conv2D
+from tensorflow.keras.layers import Conv1D
 from tensorflow.keras.layers import GlobalMaxPool1D
 from tensorflow.keras.utils import to_categorical
+
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import classification_report
-from sklearn.metrics import r2_score
+
 
 class Preprocessor:
     def __init__(self, path="../Data/news_datatest.csv"):
@@ -52,7 +38,6 @@ class Preprocessor:
 
         """ initializing tools for preprocess (stopwords, vectorization, y_labeling) """
         self.stopwords = Stopwords()
-        self.vectorization = Vectorization()
         self.y_labeler = Ylabeler()
 
         """ output = CSV file with X and Y """
@@ -139,7 +124,7 @@ class Preprocessor:
         """
         pass
 
-    def _preprocess_step_reg(self):
+    def _process_step_reg(self):
         """
         this is function preprocess step
         1) raw csv ->
@@ -157,6 +142,7 @@ class Preprocessor:
             if co == False:
                 not_coname_count=not_coname_count+1
                 del tokenized_dict[str(idx)]
+
         print(">> Y값이 도출되지 않은 공시 데이터 개수 =", not_coname_count)
 
         print(">> 유의미한 X 데이터의 개수 =", len(tokenized_dict), '유의미한 Y 데이터의 개수 =', len(y_data))
@@ -172,7 +158,7 @@ class Preprocessor:
 
         result = list(x_y_data['X'])
 
-        NewsModel = Word2Vec(sg=0, size=300, window=1, min_count=1, workers=-1)
+        NewsModel = Word2Vec(sg=1, size=300, window=1, min_count=1, workers=-1)
         NewsModel.build_vocab(result)  # 단어 생성.
         NewsModel.train(result, total_examples=len(result), epochs=100)  # 학습
 
@@ -254,13 +240,13 @@ class Preprocessor:
         CNN.add(Conv1D(filters=50, kernel_size=1, activation='relu'))  # 너비가 고정되어있으므로 1D kernel_size 가 높이
         CNN.add(GlobalMaxPool1D())
         CNN.add(Flatten())
-        # CNN.add(Dense(30, activation='relu'))
-        # CNN.add(Dense(10, activation='relu'))
+        # CNN.add(Dense(100, activation='relu'))
+        # CNN.add(Dense(20, activation='relu'))
         CNN.add(Dense(1))
         print(CNN.summary())
 
         # -----------------------------cnn 기반 학습
-        epoch_num = 300
+        epoch_num = 100
         CNN.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
         history = CNN.fit(x=train_X, y=train_Y, epochs=epoch_num, verbose=0,
                           batch_size=32,
@@ -277,12 +263,16 @@ class Preprocessor:
         plt.show()
 
         y_pred = CNN.predict(test_X)
+        print(y_pred)
 
         r2 = r2_score(test_Y, y_pred)
+        #RMSLE = np.sqrt(mean_squared_log_error(test_Y, y_pred))
+
         print("r_square score=", r2)
+        #print("RMSLE score=", RMSLE)
 
 
-    def _preprocess_step_cls(self):
+    def _process_step_cls(self):
         """
         this is function preprocess step
         1) raw csv ->
@@ -334,7 +324,7 @@ class Preprocessor:
 
         result = list(x_y_data['X'])
 
-        NewsModel = Word2Vec(sg=1, size=300, window=1, min_count=1, workers=-1)
+        NewsModel = Word2Vec(sg=1, size=300, window=3, min_count=1, workers=-1)
         NewsModel.build_vocab(result)  # 단어 생성.
         NewsModel.train(result, total_examples=len(result), epochs=100)  # 학습
 
@@ -439,7 +429,7 @@ class Preprocessor:
         print(CNN.summary())
 
         # -----------------------------cnn 기반 학습
-        epoch_num=100
+        epoch_num = 100
         CNN.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         history = CNN.fit(x=train_X, y=to_categorical(np.array(train_Y)), epochs=epoch_num, verbose=0, batch_size=32,
                           validation_data=(test_X, to_categorical(np.array(test_Y))))
@@ -459,7 +449,7 @@ class Preprocessor:
 
         print(y_pred, type(y_pred))
 
-        print("0 =",np.count_nonzero(y_pred == 0),"1 =",np.count_nonzero(y_pred == 1),"2 =",np.count_nonzero(y_pred == 2))
+        print("0 =", np.count_nonzero(y_pred == 0), "1 =", np.count_nonzero(y_pred == 1),"2 =", np.count_nonzero(y_pred == 2))
         print(confusion_matrix(test_Y, y_pred))
         print(classification_report(test_Y, y_pred, target_names=['0', '1', '2']))
 
@@ -479,7 +469,5 @@ class Preprocessor:
 
 if __name__ == '__main__':
     preprocessor = Preprocessor()
-    preprocessor._preprocess_step_cls()
-    #preprocessor._preprocess_step_reg()
-
-# 로그 재 구성, 클래스 재구성, 필요없는거 지우기, 하이퍼 파라미터 재정립, 각 step 결과 print 해보기
+    #preprocessor._process_step_cls()
+    preprocessor._process_step_reg()
