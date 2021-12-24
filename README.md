@@ -1,6 +1,6 @@
 ># 📈 StockPricePredictor
-🌟 Stock price predictor with public disclosure analysis (Team Not Easy).   
-🌟 공시 정보 기반 단기 주가 예측 모델 개발 (Team Not Easy).    <br></br>
+🌟 <i>Stock price predictor with public disclosure analysis (Team Not Easy).</i>   
+🌟 <i>공시 정보 기반 단기 주가 예측 모델 개발 (Team Not Easy).</i>    <br></br>
 [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)  [![JPype1](https://img.shields.io/badge/JPype1-1.1.2-blue.svg)](https://www.lfd.uci.edu/~gohlke/pythonlibs/#jpype) ![Tensorflow](https://img.shields.io/badge/Tensorflow-2.7.0-orange.svg)
 <br></br>
 - 공시 정보 텍스트 데이터를 input, 단기 주가 변동률 예측률을 output으로 산출하는 Model
