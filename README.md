@@ -5,7 +5,11 @@
 <br></br><br></br>
 
 ># 💡 Model Process
-<br></br><br></br>
+<br></br>
+<p align="center">
+  <img src="https://github.com/CodingLeeSeungHoon/StockPricePredictor/blob/main/process.png" />
+</p>
+<br></br>
 
 ># 📊 Intermediate results
 <br></br><br></br>
