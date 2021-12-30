@@ -1,4 +1,4 @@
-># 📈 StockPricePredictor
+# 📈 StockPricePredictor
 🌟 <i>Stock price predictor with public disclosure analysis (Team Not Easy).</i>   
 🌟 <i>공시 정보 기반 단기 주가 예측 모델 개발 (Team Not Easy).</i>    <br></br>
 [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)  [![JPype1](https://img.shields.io/badge/JPype1-1.1.2-blue.svg)](https://www.lfd.uci.edu/~gohlke/pythonlibs/#jpype) ![Tensorflow](https://img.shields.io/badge/Tensorflow-2.7.0-orange.svg)
@@ -7,21 +7,21 @@
 - Supervised Learning Based 주가 예측 모델
 <br></br>
 
-># 💡 Model Process
+>### 💡 Model Process
 <br></br>
 <p align="center">
   <img src="https://github.com/CodingLeeSeungHoon/StockPricePredictor/blob/main/process.png" />
 </p>
 <br></br>
 
-># 📊 Intermediate results & Issues
+>### 📊 Intermediate results & Issues
 #### 1)    
 #### 2)    
 #### 3)    
 #### 4)   
 <br></br>
 
-># ⚙️ 개발 환경 (Develop Env.)
+>### ⚙️ 개발 환경 (Develop Env.)
 <details>
     <summary>🔎 requirements.txt </summary>
   
